@@ -1,0 +1,3 @@
+## environemt
+
+.venv\Scripts\activate
