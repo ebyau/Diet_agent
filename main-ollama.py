@@ -209,18 +209,18 @@ def main():
     # Initialize session state
     initialize_session_state()
     
-    
-    # API Key setup (Now also handles Ollama selection)
+    # API Key setup
     with st.sidebar:
         st.header("⚙️ Setup")
         llm_option = st.radio("Choose LLM:", ["OpenAI", "Ollama"])
+        #api_key = st.text_input("OpenAI API Key", type="password")
 
         if llm_option == "OpenAI":
             api_key = st.text_input("OpenAI API Key", type="password")
             if api_key:
                 os.environ["OPENAI_API_KEY"] = api_key
                 st.success("✅ OpenAI Ready!")
-                agent = ElderDietAgent(use_ollama=False)
+                #agent = ElderDietAgent(use_ollama=False)
             else:
                 st.warning("Enter your OpenAI API key to use OpenAI")
                 st.stop()
@@ -230,8 +230,14 @@ def main():
             os.environ["OLLAMA_BASE_URL"] = ollama_base
             os.environ["OLLAMA_MODEL"] = ollama_model_name
             st.success(f"✅ Ollama Ready! Using model: {os.environ.get('OLLAMA_MODEL')}")
-            agent = ElderDietAgent(use_ollama=True)
+            #agent = ElderDietAgent(use_ollama=True)
         else:
+            st.stop()
+        if api_key:
+            os.environ["OPENAI_API_KEY"] = api_key
+            st.success("✅ Ready!")
+        else:
+            st.warning("Enter your OpenAI API key")
             st.stop()
         
         # Profile status
