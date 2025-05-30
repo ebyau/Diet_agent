@@ -121,11 +121,12 @@ def main():
     with st.sidebar:
         st.header("⚙️ Setup")
         llm_option = st.radio("Choose LLM:", ["OpenAI", "Ollama"])
+        openai_api_key_input = None  # Initialize here
 
         if llm_option == "OpenAI":
-            openai_api_key = st.text_input("OpenAI API Key", type="password")
-            if openai_api_key:
-                os.environ["OPENAI_API_KEY"] = openai_api_key
+            openai_api_key_input = st.text_input("OpenAI API Key", type="password")
+            if openai_api_key_input:
+                os.environ["OPENAI_API_KEY"] = openai_api_key_input
                 st.success("✅ Using OpenAI")
                 llm = ChatOpenAI(temperature=0, model_name="gpt-4o")
             elif "OPENAI_API_KEY" in os.environ:
@@ -153,7 +154,8 @@ def main():
         st.session_state.agent = None # Reset agent if LLM changes
 
     if 'agent' not in st.session_state:
-        if llm_option == "OpenAI" and ("OPENAI_API_KEY" in os.environ or st.sidebar.get_child(1).value): # Check if API key is available
+        openai_key_present = ("OPENAI_API_KEY" in os.environ) or (openai_api_key_input is not None and openai_api_key_input != "")
+        if llm_option == "OpenAI" and openai_key_present:
             st.session_state.agent = ElderDietAgent(use_ollama=False)
         elif llm_option == "Ollama" and llm:
             st.session_state.agent = ElderDietAgent(use_ollama=True)
