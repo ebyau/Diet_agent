@@ -20,8 +20,7 @@ load_dotenv()
 #access environment variables
 openaiapi_key = os.environ.get("OPENAI_SECRET_KEY")
 tavily_key = os.environ.get("TAVILY_API_KEY")
-ollama_base_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
-ollama_model = os.environ.get("OLLAMA_MODEL", "llama2")
+  
 
 
 # Configure page
@@ -30,7 +29,7 @@ st.set_page_config(
     page_icon="🍎",
     layout="wide"
 )
-
+  
 @dataclass
 class ElderProfile:
     name: str
@@ -38,23 +37,20 @@ class ElderProfile:
     gender: str
     weight: float
     dietary_restrictions: str
-    country: str = "USA"
+    country: str = "USA" 
     health_goal: str = "Maintain health"
 
 class ElderDietAgent:
-    def __init__(self, use_ollama=False):
-        self.use_ollama = use_ollama
-        if self.use_ollama:
-            self.llm = ChatOllama(base_url=ollama_base_url, model=ollama_model)
-        else:
-            self.llm = ChatOpenAI(temperature=0, model_name="gpt-4o")
-
+    def __init__(self):
+        self.llm = ChatOpenAI(temperature=0, model_name="gpt-4o")
+        #self.ollama = 
+    
     def create_diet_prompt(self, profile: ElderProfile, duration: str):
         template = """
         You are an expert nutritionist specializing in elderly care with cultural sensitivity.
         Your task is to create a personalized diet plan for seniors based on their profile and health goals.
-
-
+         
+        
         Create a {duration} diet plan for this senior:
 
         PROFILE:
@@ -65,7 +61,7 @@ class ElderDietAgent:
         - Dietary Restrictions: {dietary_restrictions}
         - Country: {country}
         - Health Goal: {health_goal}
-
+        
         IMPORTANT REQUIREMENTS:
         1. STRICTLY follow dietary restrictions - if "no nuts" means NO nuts/nut products
         2. Include foods commonly available in {country}
@@ -90,16 +86,16 @@ class ElderDietAgent:
 
         Make it practical and easy to follow for {name}.
         """
-
+        
         return PromptTemplate(
-            input_variables=["duration", "name", "age", "gender", "weight", "dietary_restrictions", "country", "health_goal"],
+            input_variables=["duration", "name", "age", "gender", "weight", "dietary_restrictions", "country", "health_goal"],	
             template=template
         )
-
+    
     def generate_diet_plan(self, profile: ElderProfile, duration: str) -> str:
         prompt = self.create_diet_prompt(profile, duration)
         chain = LLMChain(llm=self.llm, prompt=prompt)
-
+        
         result = chain.run(
             duration=duration,
             name=profile.name,
@@ -110,157 +106,89 @@ class ElderDietAgent:
             country=profile.country,
             health_goal=profile.health_goal
         )
-
+        
         return result
 
 def main():
     st.title("🍎 Elder Diet Planner")
     st.markdown("### Simple nutrition planning for seniors")
-
-    # LLM Selection in the sidebar
+    
+    # API Key setup
     with st.sidebar:
         st.header("⚙️ Setup")
-        llm_option = st.radio("Choose LLM:", ["OpenAI", "Ollama"])
-        openai_api_key_input = None  # Initialize here
-
-        if llm_option == "OpenAI":
-            openai_api_key_input = st.text_input("OpenAI API Key", type="password")
-            if openai_api_key_input:
-                os.environ["OPENAI_API_KEY"] = openai_api_key_input
-                st.success("✅ Using OpenAI")
-                llm = ChatOpenAI(temperature=0, model_name="gpt-4o")
-            elif "OPENAI_API_KEY" in os.environ:
-                st.success("✅ Using OpenAI (API key found in environment)")
-                llm = ChatOpenAI(temperature=0, model_name="gpt-4o")
-            else:
-                st.warning("Enter your OpenAI API key to use OpenAI")
-                llm = None
-        elif llm_option == "Ollama":
-            ollama_base = st.text_input("Ollama Base URL", value=os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434"))
-            ollama_model_name = st.text_input("Ollama Model", value=os.environ.get("OLLAMA_MODEL", "llama2"))
-            os.environ["OLLAMA_BASE_URL"] = ollama_base
-            os.environ["OLLAMA_MODEL"] = ollama_model_name
-            st.success(f"✅ Using Ollama with model: {os.environ.get('OLLAMA_MODEL')}")
-            llm = ChatOllama(base_url=os.environ.get("OLLAMA_BASE_URL"), model=os.environ.get("OLLAMA_MODEL"))
+        api_key = st.text_input("OpenAI API Key", type="password")
+        if api_key:
+            os.environ["OPENAI_API_KEY"] = api_key
+            st.success("✅ Ready!")
         else:
-            llm = None
+            st.warning("Enter your OpenAI API key")
             st.stop()
-
-    # Initialize agent based on selected LLM
-    if 'agent_type' not in st.session_state:
-        st.session_state.agent_type = llm_option
-    elif st.session_state.agent_type != llm_option:
-        st.session_state.agent_type = llm_option
-        st.session_state.agent = None # Reset agent if LLM changes
-
+    
+    # Initialize agent
     if 'agent' not in st.session_state:
-        openai_key_present = ("OPENAI_API_KEY" in os.environ) or (openai_api_key_input is not None and openai_api_key_input != "")
-        if llm_option == "OpenAI" and openai_key_present:
-            st.session_state.agent = ElderDietAgent(use_ollama=False)
-        elif llm_option == "Ollama" and llm:
-            st.session_state.agent = ElderDietAgent(use_ollama=True)
-        else:
-            st.warning("Please configure the LLM in the sidebar.")
-
+        st.session_state.agent = ElderDietAgent()
+    
     # Simple form
     st.header("👤 Basic Information")
-
+    
     col1, col2 = st.columns(2)
-
+    
     with col1:
         name = st.text_input("Name")
         age = st.number_input("Age", min_value=50, max_value=100, value=70)
         health_goal = st.text_input("Health Goal",
                                     placeholder="e.g., maintain health, lose weight,improve cognitive health",
                                     )
-
+    
     with col2:
         gender = st.selectbox("Gender", ["Female", "Male"])
         weight = st.number_input("Weight (kg)", min_value=30.0, max_value=150.0, value=70.0)
         country = st.text_input("Country", value="USA")
-
+        
     dietary_restrictions = st.text_area(
-        "Dietary Restrictions",
+        "Dietary Restrictions", 
         placeholder="e.g., diabetic, low sodium, vegetarian, no nuts, etc.",
         help="List any dietary restrictions, allergies, or special requirements"
     )
-
+    
     # Plan duration
     duration = st.radio("Plan Type:", ["Daily", "Weekly"], horizontal=True)
-
+    
     # Generate plan
     if st.button("🍽️ Generate Diet Plan", type="primary"):
         if not name:
             st.error("Please enter a name")
             return
-
-        if 'agent' in st.session_state and st.session_state.agent:
-            profile = ElderProfile(
-                name=name,
-                age=age,
-                gender=gender,
-                weight=weight,
-                dietary_restrictions=dietary_restrictions,
-                country=country,
-                health_goal=health_goal
-            )
-
-            with st.spinner(f"Creating your personalized diet plan using {llm_option} ..."):
-                try:
-                    diet_plan = st.session_state.agent.generate_diet_plan(profile, duration)
-
-                    st.success("✅ Diet plan created!")
-                    st.markdown("---")
-                    st.subheader(f"{duration} Diet Plan for {name}")
-                    st.markdown(diet_plan)
-
-                    # Download button
-                    st.download_button(
-                        "📥 Download Plan",
-                        diet_plan,
-                        f"{name.replace(' ', '_')}_diet_plan.txt",
-                        "text/plain"
-                    )
-
-                except Exception as e:
-                    st.error(f"Error: {str(e)}")
-        else:
-            st.warning("Please configure the LLM in the sidebar.")
-
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("💬 Chat with the LLM")
-    if 'messages' not in st.session_state:
-        st.session_state.messages = []
-
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    if prompt := st.chat_input("Ask a question about the diet plan or elderly nutrition:"):
-        if llm:
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            with st.chat_message("user"):
-                st.markdown(prompt)
-
-            with st.chat_message("assistant"):
-                with st.spinner(f"Thinking with {llm_option} ..."):
-                    try:
-                        full_response = ""
-                        if isinstance(llm, ChatOpenAI) or isinstance(llm, ChatOllama):
-                            response = llm.invoke(prompt)
-                            if hasattr(response, 'content'):
-                                full_response = response.content
-                            else:
-                                full_response = str(response)
-                        else:
-                            full_response = llm.predict(prompt)
-                        st.markdown(full_response)
-                    except Exception as e:
-                        st.error(f"Error during chat: {e}")
-                        full_response = f"An error occurred: {e}"
-                st.session_state.messages.append({"role": "assistant", "content": full_response})
-        else:
-            st.warning("Please configure the LLM in the sidebar to chat.")
+            
+        profile = ElderProfile(
+            name=name,
+            age=age,
+            gender=gender,
+            weight=weight,
+            dietary_restrictions=dietary_restrictions,
+            country=country,
+            health_goal=health_goal
+        )
+        
+        with st.spinner("Creating your personalized diet plan..."):
+            try:
+                diet_plan = st.session_state.agent.generate_diet_plan(profile, duration)
+                
+                st.success("✅ Diet plan created!")
+                st.markdown("---")
+                st.subheader(f"{duration} Diet Plan for {name}")
+                st.markdown(diet_plan)
+                
+                # Download button
+                st.download_button(
+                    "📥 Download Plan",
+                    diet_plan,
+                    f"{name.replace(' ', '_')}_diet_plan.txt",
+                    "text/plain"
+                )
+                
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
 
 if __name__ == "__main__":
     main()
