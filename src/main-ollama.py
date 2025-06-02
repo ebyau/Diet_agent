@@ -18,15 +18,15 @@ import os
 load_dotenv()
 
 #access environment variables
-openaiapi_key = os.environ.get("OPENAI_SECRET_KEY")
-tavily_key = os.environ.get("TAVILY_API_KEY")
+#openaiapi_key = os.environ.get("OPENAI_SECRET_KEY")
+#tavily_key = os.environ.get("TAVILY_API_KEY")
 ollama_base_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 ollama_model = os.environ.get("OLLAMA_MODEL", "llama2")
 
 
 # Configure page
 st.set_page_config(
-    page_title="Elder Diet Planner",
+    page_title="Elder Diet Planner🦋",
     page_icon="🍎",
     layout="wide"
 )
