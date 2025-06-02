@@ -213,7 +213,7 @@ def main():
     with st.sidebar:
         st.header("⚙️ Setup")
         llm_option = st.radio("Choose LLM:", ["OpenAI", "Ollama"])
-        api_key = st.text_input("OpenAI API Key", type="password")
+        #api_key = st.text_input("OpenAI API Key", type="password")
 
         if llm_option == "OpenAI":
             api_key = st.text_input("OpenAI API Key", type="password")
